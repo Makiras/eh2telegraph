@@ -59,9 +59,12 @@ static PROCESS_MESSAGE_DATE: OnceCell<chrono::DateTime<chrono::Utc>> = OnceCell:
 async fn main() {
     let args = Args::parse();
 
-    let timer = tracing_subscriber::fmt::time::LocalTime::new(time::macros::format_description!(
-        "[month]-[day] [hour]:[minute]:[second]"
-    ));
+    let offset_in_sec = chrono::Local::now().offset().local_minus_utc();
+
+    let timer = tracing_subscriber::fmt::time::OffsetTime::new(
+        time::UtcOffset::from_whole_seconds(offset_in_sec).unwrap(),
+        time::macros::format_description!("[month]-[day] [hour]:[minute]:[second]"),
+    );
     // We will only process messages from 1 day earlier.
     PROCESS_MESSAGE_DATE
         .set(

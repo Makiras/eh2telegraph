@@ -121,10 +121,10 @@ where
             Command::Sync(url) => {
                 if url.is_empty() {
                     let _ = bot
-                        .send_message(msg.chat.id, escape("Usage: /sync url"))
+                        .send_message(msg.chat.id, escape("本喵只能这么提供服务啦: /sync url"))
                         .reply_to_message_id(msg.id)
                         .await;
-                    return ControlFlow::BREAK;
+                    return ControlFlow::Break(());
                 }
 
                 info!(
@@ -132,11 +132,11 @@ where
                     PrettyChat(&msg.chat)
                 );
                 let msg: Message = ok_or_break!(
-                    bot.send_message(msg.chat.id, escape(&format!("Syncing url {url}")))
+                    bot.send_message(msg.chat.id, escape(&format!("正在学习新的姿势喵！{url}")))
                         .reply_to_message_id(msg.id)
                         .await
                 );
-                tokio::spawn(async move {
+                tokio::spawn(async move {             
                     let _ = bot
                         .edit_message_text(msg.chat.id, msg.id, self.sync_response(&url).await)
                         .await;
@@ -144,7 +144,7 @@ where
             }
         };
 
-        ControlFlow::BREAK
+        ControlFlow::Break(())
     }
 
     pub async fn respond_admin_cmd(
@@ -162,7 +162,7 @@ where
                         .reply_to_message_id(msg.id)
                         .await;
                 });
-                ControlFlow::BREAK
+                ControlFlow::Break(())
             }
         }
     }
@@ -201,20 +201,20 @@ where
                 PrettyChat(&msg.chat)
             );
             let msg: Message = ok_or_break!(
-                bot.send_message(msg.chat.id, escape(&format!("Syncing url {url}")))
+                bot.send_message(msg.chat.id, escape(&format!("正在学习新的姿势喵！{url}")))
                     .reply_to_message_id(msg.id)
                     .await
             );
-            tokio::spawn(async move {
+            tokio::spawn(async move {     
                 let _ = bot
                     .edit_message_text(msg.chat.id, msg.id, self.sync_response(&url).await)
                     .await;
             });
-            return ControlFlow::BREAK;
+            return ControlFlow::Break(());
         }
 
         // fallback to the next branch
-        ControlFlow::CONTINUE
+        ControlFlow::Continue(())
     }
 
     pub async fn respond_caption(
@@ -260,19 +260,19 @@ where
                     PrettyChat(&msg.chat)
                 );
                 let msg: Message = ok_or_break!(
-                    bot.send_message(msg.chat.id, escape(&format!("Syncing url {url}")))
+                    bot.send_message(msg.chat.id, escape(&format!("正在学习新的姿势喵！{url}")))
                         .reply_to_message_id(msg.id)
                         .await
                 );
                 let url = url.to_string();
-                tokio::spawn(async move {
+                tokio::spawn(async move {   
                     let _ = bot
                         .edit_message_text(msg.chat.id, msg.id, self.sync_response(&url).await)
                         .await;
                 });
-                ControlFlow::BREAK
+                ControlFlow::Break(())
             }
-            None => ControlFlow::CONTINUE,
+            None => ControlFlow::Continue(()),
         }
     }
 
@@ -284,7 +284,7 @@ where
         let first_photo = match msg.photo().and_then(|x| x.first()) {
             Some(p) => p,
             None => {
-                return ControlFlow::CONTINUE;
+                return ControlFlow::Continue(());
             }
         };
 
@@ -324,7 +324,7 @@ where
             Some(u) => u,
             None => {
                 trace!("[photo handler] image not found");
-                return ControlFlow::CONTINUE;
+                return ControlFlow::Continue(());
             }
         };
 
@@ -334,7 +334,7 @@ where
         );
 
         if let Ok(msg) = bot
-            .send_message(msg.chat.id, escape(&format!("Syncing url {url}")))
+            .send_message(msg.chat.id, escape(&format!("正在学习新的姿势喵！\n{url}")))
             .reply_to_message_id(msg.id)
             .await
         {
@@ -345,7 +345,7 @@ where
             });
         }
 
-        ControlFlow::BREAK
+        ControlFlow::Break(())
     }
 
     pub async fn respond_default(
@@ -355,14 +355,14 @@ where
     ) -> ControlFlow<()> {
         if msg.chat.is_private() {
             ok_or_break!(
-                bot.send_message(msg.chat.id, escape("Unrecognized message."))
+                bot.send_message(msg.chat.id, escape("咕噜咕噜~,进错地方啦"))
                     .reply_to_message_id(msg.id)
                     .await
             );
         }
         #[cfg(debug_assertions)]
         tracing::warn!("{:?}", msg);
-        ControlFlow::BREAK
+        ControlFlow::Break(())
     }
 
     async fn sync_response(&self, url: &str) -> String {
@@ -370,10 +370,11 @@ where
             .work(url, || async {
                 match self.route_sync(url).await {
                     Ok(url) => {
-                        format!("Sync to telegraph finished: {}", link(&url, &escape(&url)))
+                        tracing::info!("synced {}", url);
+                        format!("咕噜咕噜\\~\\~ 身体已经被变成这种姿势了呢！\nOwO: {}", link(&url, &escape(&url)))
                     }
                     Err(e) => {
-                        format!("Sync to telegraph failed: {}", escape(&e.to_string()))
+                        format!("有奇怪的东西把我玩坏惹: {}", escape(&e.to_string()))
                     }
                 }
             })
